@@ -1,6 +1,6 @@
 package com.dozingcatsoftware.bouncy;
 
-import android.content.Context;
+import com.dozingcatsoftware.linux.Context;
 
 import com.dozingcatsoftware.vectorpinball.util.IOUtils;
 import com.dozingcatsoftware.bouncy.util.JSONUtils;

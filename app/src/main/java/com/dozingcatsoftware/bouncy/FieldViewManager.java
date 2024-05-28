@@ -6,12 +6,15 @@ import java.util.List;
 
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Vector2;
+import com.dozingcatsoftware.linux.KeyEvent;
 import com.dozingcatsoftware.vectorpinball.model.Field;
 import com.dozingcatsoftware.vectorpinball.model.IFieldRenderer;
 
+/*
 import android.os.Handler;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
+*/
 
 /**
  * This class handles the common functionality for Canvas and OpenGL-based views, including mapping
@@ -144,6 +147,7 @@ public class FieldViewManager {
         return cachedHeight - ((y - cachedYOffset) * cachedScale);
     }
 
+    /*
     // For compatibility with Android 1.6, use reflection for multitouch features.
     boolean hasMultitouch;
     Method getPointerCountMethod;
@@ -170,7 +174,7 @@ public class FieldViewManager {
             hasMultitouch = false;
         }
     }
-
+     */
     void launchBallIfNeeded() {
         // Don't launch a new ball immediately after losing the previous ball, since the user may
         // have been trying to use a flipper.
@@ -183,7 +187,7 @@ public class FieldViewManager {
     /**
      * Called when the view is touched. Activates flippers, starts a new game if one is not in
      * progress, and launches a ball if one is not in play.
-     */
+     *
     public boolean handleTouchEvent(MotionEvent event) {
         int actionType = event.getAction() & MOTIONEVENT_ACTION_MASK;
         synchronized (field) {
@@ -327,7 +331,7 @@ public class FieldViewManager {
                 }
             }
         }
-    }
+    }*/
 
     static List<Integer> LEFT_FLIPPER_KEYS = Arrays.asList(
             KeyEvent.KEYCODE_Z, KeyEvent.KEYCODE_DPAD_LEFT);
