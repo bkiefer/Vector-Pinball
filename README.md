@@ -1,5 +1,19 @@
 # Vector Pinball
 
+This is an attempt to port this game to Linux using Swing and the OpenGL renderer. 
+
+I tried to keep the changes to the minimum and replaced the missing function to the best of my knowledge.
+Unfortunately, the GL rendering does not work and i don't know enough about it to understand what's going wrong.
+Once that is fixed, there is more to do to get it closer to the original, but that has to be done first.
+
+The current version is on the developer branch and can be build by executing
+
+mvn install
+
+in the app directory of the project. A run.sh script is provided to start the app. Close the window to exit, the menu item does not work properly and the app continues to run in the background although the window is gone.
+
+# **** ORIGINAL README ****
+
 Vector Pinball is a pinball game for Android devices.
 It is released under version 3 of the GPL; see [COPYING](COPYING.txt) for the license text.
 
