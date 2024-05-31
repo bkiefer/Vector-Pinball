@@ -56,31 +56,44 @@ public class ScoreView extends JPanel {
     String debugMessage = null;
 
     JLabel scoreField;
+    JLabel multField;
     JLabel fpsField;
     JLabel ballField;
 
     Icon balls[];
 
+    BouncyActivity frame;
+
     static NumberFormat SCORE_FORMAT = NumberFormat.getInstance();
 
-    public ScoreView() {
+    private static JLabel newBWLabel() {
+      JLabel l = new JLabel();
+      l.setBackground(Color.black);
+      l.setForeground(Color.white);
+      return l;
+    }
+
+    public ScoreView(BouncyActivity f) {
+      frame = f;
       this.setBackground(Color.black);
       setLayout(new BoxLayout(this, BoxLayout.LINE_AXIS));
-      JLabel sc = new JLabel("Score: ");
-      sc.setBackground(Color.black);
-      sc.setForeground(Color.white);
-      add(sc);
-      scoreField = new JLabel();
-      scoreField.setBackground(Color.black);
-      scoreField.setForeground(Color.white);
+      add(Box.createHorizontalGlue());
+      //JLabel sc = new JLabel("Score: ");
+      //sc.setBackground(Color.black);
+      //sc.setForeground(Color.white);
+      //add(sc);
+      scoreField = newBWLabel();
+      scoreField.setForeground(Color.yellow);
       scoreField.setText("0");
       add(scoreField);
       add(Box.createHorizontalGlue());
-      fpsField = new JLabel();
-      fpsField.setBackground(Color.black);
-      fpsField.setForeground(Color.white);
-      fpsField.setText("0");
+      fpsField = newBWLabel();
+      //fpsField.setText("0");
       add(fpsField);
+      add(Box.createRigidArea(new Dimension(10,0)));
+      multField = newBWLabel();
+      multField.setText("");
+      add(multField);
       add(Box.createRigidArea(new Dimension(10,0)));
       ballField = new JLabel();
       add(ballField);
@@ -89,10 +102,10 @@ public class ScoreView extends JPanel {
         java.net.URL imageURL = ClassLoader.getSystemResource("icons/balls"+ i +".png");
         ImageIcon imageIcon = new ImageIcon(imageURL);
         Image image = imageIcon.getImage(); // transform it
-        int scale = 3;
+        float scale = 1.5f;
         Image newimg = image.getScaledInstance(
-            imageIcon.getIconWidth() / scale,
-            imageIcon.getIconHeight() / scale,
+            (int)(imageIcon.getIconWidth() / scale),
+            (int)(imageIcon.getIconHeight() / scale),
             java.awt.Image.SCALE_SMOOTH); // scale it the smooth way  balls[i].
         balls[i] = new ImageIcon(newimg);
       }
@@ -124,8 +137,12 @@ public class ScoreView extends JPanel {
         */
     }
 
+    private Context getContext() {
+      return frame;
+    }
+
     //@Override
-    public void onDraw(Canvas c) {
+    public void update() {
         GameMessage msg = null;
         boolean gameInProgress = false;
         boolean ballInPlay = false;
@@ -149,28 +166,37 @@ public class ScoreView extends JPanel {
 
         //c.drawColor(backgroundColor);
         String displayString = (msg != null) ? msg.text : null;
-/*
         if (displayString == null) {
             // Show score if game is in progress, otherwise cycle between
             // "Touch to start"/previous score/high score.
             if (gameInProgress) {
-  */
-        displayString = formatScore(score, unlimitedBalls);
+                displayString = formatScore(score, unlimitedBalls);
 
-        scoreField.setText(Long.toString(score));
-        if (showFPS && fps > 0) {
-          fpsField.setText(String.format("%.1f", fps));
-        } else {
-          fpsField.setText("");
-        }
-        if (unlimitedBalls) {
-          ballField.setIcon(balls[4]);
-        } else {
-          ballField.setIcon(balls[currentBall]);
-        }
-        /*
-            }
-            else {
+                scoreField.setText(Long.toString(score));
+                if (showFPS && fps > 0) {
+                  fpsField.setText(String.format("%.1f", fps));
+                } else {
+                  fpsField.setText("");
+                }
+                if (unlimitedBalls) {
+                  ballField.setIcon(balls[4]);
+                } else {
+                  if (! gameInProgress) {
+                    ballField.setIcon(balls[3]);
+                  } else {
+                    ballField.setIcon(balls[totalBalls - currentBall + 1
+                                            - (ballInPlay ? 1 : 0)]);
+                  }
+                }
+                if (multiplier > 1) {
+                  int intValue = (int) multiplier;
+                  String multiplierString = (multiplier == intValue) ?
+                          intValue + "x" : String.format("%.2fx", multiplier);
+                  multField.setText(multiplierString);
+                } else {
+                  multField.setText("");
+                }
+            } else {
                 long now = currentMillis();
                 if (lastUpdateTime == null) {
                     lastUpdateTime = now;
@@ -181,8 +207,10 @@ public class ScoreView extends JPanel {
                 }
                 displayString = displayedGameOverMessage(score, unlimitedBalls);
             }
-        }*/
-
+        }
+        if (displayString != null) {
+          scoreField.setText(displayString);
+        }
         /*
         int width = this.getWidth();
         int height = this.getHeight();
@@ -235,13 +263,14 @@ public class ScoreView extends JPanel {
                 c.drawText(multiplierString, messageStartX, height * 0.4f, multiplierPaint);
             }
         }*/
+        this.invalidate();
     }
 
     long currentMillis() {
         return System.currentTimeMillis();
     }
 
-    /*
+
     // Cycles to the next message to show when there is not game in progress. This can be
     // "Touch to start", the last score if available, or one of the previous high scores.
     void cycleGameOverMessage(long lastScore) {
@@ -254,7 +283,7 @@ public class ScoreView extends JPanel {
                     gameOverMessageIndex = HIGH_SCORE_MESSAGE;
                     highScoreIndex = 0;
                 }
-                break;
+                //break;
             case LAST_SCORE_MESSAGE:
                 if (highScores.get(0) > 0) {
                     gameOverMessageIndex = HIGH_SCORE_MESSAGE;
@@ -278,27 +307,27 @@ public class ScoreView extends JPanel {
     String displayedGameOverMessage(long lastScore, boolean unlimitedBalls) {
         switch (gameOverMessageIndex) {
             case TOUCH_TO_START_MESSAGE:
-                return getContext().getString(R.string.touch_to_start_message);
+                return getContext().getString("touch_to_start_message");
             case LAST_SCORE_MESSAGE:
                 return getContext().getString(
-                        R.string.last_score_message, formatScore(lastScore, unlimitedBalls));
+                        "last_score_message", formatScore(lastScore, unlimitedBalls));
             case HIGH_SCORE_MESSAGE:
                 // highScoreIndex could be too high if we just switched from a different table.
                 int index = Math.min(highScoreIndex, this.highScores.size() - 1);
                 // High scores are never recorded when using unlimited balls.
                 String formattedScore = formatScore(this.highScores.get(index), false);
                 if (index == 0) {
-                    return getContext().getString(R.string.top_high_score_message, formattedScore);
+                    return getContext().getString("top_high_score_message", formattedScore);
                 }
                 else {
                     return getContext().getString(
-                            R.string.other_high_score_message, index + 1, formattedScore);
+                            "other_high_score_message", index + 1, formattedScore);
                 }
             default:
                 throw new IllegalStateException(
                         "Unknown gameOverMessageIndex: " + gameOverMessageIndex);
         }
-    }*/
+    }
 
     private String formatScore(long score, boolean unlimitedBalls) {
         String s = SCORE_FORMAT.format(score);

@@ -2,17 +2,28 @@ package com.dozingcatsoftware.linux;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.Component;
 import java.awt.Dimension;
+import java.awt.Graphics;
+import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.ComponentAdapter;
+import java.awt.event.ComponentEvent;
+import java.awt.event.ComponentListener;
 import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
+import java.awt.event.KeyEvent;
+import java.awt.event.KeyListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.awt.event.WindowFocusListener;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -32,7 +43,9 @@ import javax.swing.JMenuBar;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
+import javax.swing.border.Border;
 import javax.swing.border.EmptyBorder;
+import javax.swing.border.LineBorder;
 import javax.swing.text.View;
 
 import org.json.JSONException;
@@ -49,11 +62,13 @@ import com.dozingcatsoftware.vectorpinball.model.Field;
 import com.dozingcatsoftware.vectorpinball.model.FieldDriver;
 import com.dozingcatsoftware.vectorpinball.model.GameState;
 import com.dozingcatsoftware.vectorpinball.model.IStringResolver;
+import com.dozingcatsoftware.vectorpinball.util.IOUtils;
 import com.jogamp.opengl.GLCapabilities;
+import com.jogamp.opengl.GLES2;
 import com.jogamp.opengl.GLProfile;
 
 
-public class BouncyActivity extends JFrame implements Context {
+public class BouncyActivity extends JFrame implements Context, KeyListener {
   public static final Logger logger =
       LoggerFactory.getLogger(BouncyActivity.class);
 
@@ -118,7 +133,7 @@ public class BouncyActivity extends JFrame implements Context {
     }
   };
 
-  private static final String SHADER_ROOT="src/main/assets/shaders/";
+  private static final String SHADER_ROOT="src/main/assets/";
 
   private enum gameButtons {
     start("Start Game"),
@@ -146,7 +161,7 @@ public class BouncyActivity extends JFrame implements Context {
       butt.addActionListener(act);
       butt.setBackground(Color.black);
       butt.setForeground(Color.white);
-      butt.setBorder(new EmptyBorder(1, 1, 1, 1));
+      butt.setBorder(new LineBorder(Color.white, 1));
       buttons[ordinal()] = butt;
       return butt;
     }
@@ -156,16 +171,20 @@ public class BouncyActivity extends JFrame implements Context {
     }
   };
 
+  JMenu fileMenu;
+
   GLFieldView glFieldView;
-  GL20Renderer gl20Renderer;
+  GL20Renderer<GLES2> gl20Renderer;
+
+  StringResolver stringResolver;
 
   //JButton[] button = new JButton[gameButtons.values().length];
   boolean unlimitedBallsToggle = false;
-  JCheckBox unlimitedBallsCheckBox;
+  //JCheckBox unlimitedBallsCheckBox;
 
-  ScoreView scoreView = new ScoreView();
+  ScoreView scoreView = new ScoreView(this);
 
-  public static Dimension _preferredSize = new Dimension(600, 800);
+  public static Dimension _preferredSize = new Dimension(935, 1028);
   protected Dimension _preferredButtonSize = new Dimension(120, 30);
 
   int numberOfLevels;
@@ -185,12 +204,13 @@ public class BouncyActivity extends JFrame implements Context {
   FieldDriver fieldDriver = new FieldDriver();
   FieldViewManager fieldViewManager = new FieldViewManager();
 
-  Object getBaseContext() { return null; }
+  public Object getBaseContext() { return null; }
 
   private class StringResolver implements IStringResolver {
     Map<String, Object> rsrcs;
     Map<String, String> strings = new HashMap<>();
 
+    @SuppressWarnings("unchecked")
     private void readStringResources(File recfile) {
       try {
         rsrcs = XML.toJSONObject(new FileReader(recfile)).toMap();
@@ -224,7 +244,7 @@ public class BouncyActivity extends JFrame implements Context {
 
     @Override
     public String resolveString(String key, Object... params) {
-      return strings.get(key);
+      return String.format(strings.get(key), params);
     }
   }
 
@@ -237,7 +257,8 @@ public class BouncyActivity extends JFrame implements Context {
 
   // TODO: PLAY AUDIO
   Field field = new Field(System::currentTimeMillis,
-      new StringResolver(), //new VPSoundpool.Player()
+      stringResolver = new StringResolver(),
+      //new VPSoundpool.Player()
       AudioPlayer.NoOpPlayer.getInstance()
       );
 
@@ -246,7 +267,11 @@ public class BouncyActivity extends JFrame implements Context {
     boolean paused = state.isPaused();
     boolean gameInProgress = state.isGameInProgress();
     if (gameInProgress) {
-      unlimitedBallsCheckBox.setEnabled(false);
+      // No table switching during game
+      fileMenu.getMenuComponent(0).setEnabled(false);
+      fileMenu.getMenuComponent(1).setEnabled(false);
+      fileMenu.getMenuComponent(2).setEnabled(false);
+      //unlimitedBallsCheckBox.setEnabled(false);
       if (paused) {
         // resume and end game active
         gameButtons.start.getButton().setEnabled(false);
@@ -261,9 +286,12 @@ public class BouncyActivity extends JFrame implements Context {
         gameButtons.resume.getButton().setEnabled(false);
       }
     } else {
+      fileMenu.getMenuComponent(0).setEnabled(true);
+      fileMenu.getMenuComponent(1).setEnabled(true);
+      fileMenu.getMenuComponent(2).setEnabled(true);
       // Game not in progress,
       // show high score active, unlimited balls checker active
-      unlimitedBallsCheckBox.setEnabled(true);
+      //unlimitedBallsCheckBox.setEnabled(true);
       gameButtons.start.getButton().setEnabled(true);
       gameButtons.end.getButton().setEnabled(false);
       gameButtons.pause.getButton().setEnabled(false);
@@ -281,7 +309,6 @@ public class BouncyActivity extends JFrame implements Context {
     // Reset frame rate since app or system settings that affect performance could have changed.
     fieldDriver.resetFrameRate();
     unpauseGame();
-    updateButtons();
   }
 
   //@Override
@@ -295,9 +322,8 @@ public class BouncyActivity extends JFrame implements Context {
     // This handles the main activity pausing and resuming.
     //super.onWindowFocusChanged(hasWindowFocus);
     if (!hasWindowFocus) {
-      //pauseGame();
-    }
-    else {
+      pauseGame();
+    } else {
       // If game is in progress, return to the paused menu rather than immediately resuming.
       if (field.getGameState().isGameInProgress()) {
         if (glFieldView != null) {
@@ -317,7 +343,7 @@ public class BouncyActivity extends JFrame implements Context {
   public void pauseGame() {
       //VPSoundpool.pauseMusic();
       GameState state = field.getGameState();
-      if (state.isPaused()) return;
+      if (state.isPaused() || !state.isGameInProgress()) return;
       state.setPaused(true);
 
       fieldDriver.stop();
@@ -332,19 +358,6 @@ public class BouncyActivity extends JFrame implements Context {
       field.getGameState().setPaused(false);
 
       //handler.postDelayed(this::tick, 75);
-      Thread tickThread = new Thread(
-              () -> {
-                  try {
-                      Thread.sleep(100);
-                  } catch (InterruptedException e) {
-                      throw new RuntimeException(e);
-                  }
-                  synchronized (BouncyActivity.this) {
-                      BouncyActivity.this.tick();
-                  }
-              });
-      tickThread.setDaemon(true);
-      tickThread.start();
 
       fieldDriver.start();
       if (glFieldView != null) glFieldView.onResume();
@@ -391,7 +404,7 @@ public class BouncyActivity extends JFrame implements Context {
       synchronized (field) {
           field.endGame();
       }
-      updateButtons();
+      updateHighScoreAndButtonPanel();
   }
 
   // Store separate high scores for each field, using unique suffix in prefs key.
@@ -459,10 +472,40 @@ public class BouncyActivity extends JFrame implements Context {
 
   // Called every 100 milliseconds while app is visible, to update score view and high score.
   void tick() {
-      scoreView.invalidate();
       scoreView.setFPS(fieldDriver.getAverageFPS());
       scoreView.setDebugMessage(field.getDebugMessage());
-      updateHighScoreForCurrentLevel(field.getScore());
+      scoreView.update();
+      updateButtons();
+      /*
+      GameState state = field.getGameState();
+      if (state.getTotalBalls() == state.getBallNumber()) {
+        doEndGame(null);
+      }
+      */
+  }
+
+  /**
+   * If the score of the current or previous game is greater than the previous high score,
+   * update high score in preferences and ScoreView. Also show button panel if game has ended.
+   */
+  void updateHighScoreAndButtonPanel() {
+      synchronized (field) {
+          GameState state = field.getGameState();
+          if (!state.isGameInProgress()) {
+              updateButtons();
+
+              // No high scores for unlimited balls.
+              if (!state.hasUnlimitedBalls()) {
+                  long score = field.getGameState().getScore();
+                  // Add to high scores list if the score beats the lowest existing high score,
+                  // or if all the high score slots aren't taken.
+                  if (score > highScores.get(0) ||
+                          highScores.size() < MAX_NUM_HIGH_SCORES) {
+                      this.updateHighScoreForCurrentLevel(score);
+                  }
+              }
+          }
+      }
   }
 
   /** Updates the high score in the ScoreView display, and persists it to SharedPreferences. */
@@ -499,6 +542,7 @@ public class BouncyActivity extends JFrame implements Context {
   }
 
   void switchToTable(int tableNum) {
+      scoreView.setHighScores(highScores);
       this.currentLevel = tableNum;
       synchronized (field) {
           resetFieldForCurrentLevel();
@@ -506,7 +550,6 @@ public class BouncyActivity extends JFrame implements Context {
       this.setInitialLevel(currentLevel);
       this.highScores = this.highScoresFromPreferencesForCurrentLevel();
       this.lastScore = this.lastScoreFromPreferencesForCurrentLevel();
-      scoreView.setHighScores(highScores);
       // Performance can be different on different tables.
       fieldDriver.resetFrameRate();
   }
@@ -540,12 +583,14 @@ public class BouncyActivity extends JFrame implements Context {
       // achievable frame rate may change.
       int lineWidth = 0;
       try {
-          lineWidth = Integer.parseInt(prefs.getString("lineWidth", "0"));
+          lineWidth = prefs.getInt("lineWidth", 0);
       }
       catch (NumberFormatException ignored) {}
       if (lineWidth != fieldViewManager.getCustomLineWidth()) {
           fieldViewManager.setCustomLineWidth(lineWidth);
       }
+
+      unlimitedBallsToggle = prefs.getBoolean("unlimitedBallsToggle", false);
 
       boolean showBallTrails = prefs.getBoolean("showBallTrails", true);
       field.setBallTrailsEnabled(showBallTrails);
@@ -573,7 +618,11 @@ public class BouncyActivity extends JFrame implements Context {
     scoreView.setField(field);
 
     fieldDriver.setField(field);
-    fieldDriver.setDrawFunction(fieldViewManager::draw);
+    fieldDriver.setDrawFunction(() ->
+    {
+      BouncyActivity.this.fieldViewManager.draw();
+      BouncyActivity.this.tick();
+    });
 
     highScores = this.highScoresFromPreferencesForCurrentLevel();
     lastScore = this.lastScoreFromPreferencesForCurrentLevel();
@@ -691,10 +740,17 @@ public class BouncyActivity extends JFrame implements Context {
     // is a GLCanvas
     glFieldView = new GLFieldView(capabilities, null);
     // TODO: GET A SHADERLOOKUPFUNCTION FOR THE SECOND ARGUMENT
-    Function<String, String> fn = (String shaderPath) -> SHADER_ROOT + shaderPath;
+    Function<String, String> fn = (String shaderPath) -> {
+      try {
+        InputStream input = new FileInputStream(SHADER_ROOT + shaderPath);
+        return IOUtils.utf8FromStream(input);
+      }
+      catch(IOException ex) {
+        throw new RuntimeException(ex);
+      }
+    };
     // is a GLEventListener
-    //GL4bcImpl foo = new GL4bcImpl(profile, glFieldView.getContext().g);
-    gl20Renderer = new GL20Renderer(glFieldView, fn);
+    gl20Renderer = new GL20Renderer<GLES2>(glFieldView, fn);
     gl20Renderer.setManager(fieldViewManager);
 
     contentPane.add(glFieldView, BorderLayout.CENTER);
@@ -707,7 +763,11 @@ public class BouncyActivity extends JFrame implements Context {
       public void windowGainedFocus(WindowEvent e) { onWindowFocusChanged(true); }
     });
 
+    // TODO: MAYBE REMOVE BUTTONS ALTOGETHER
     JPanel buttonPanel = new JPanel();
+    buttonPanel.setForeground(Color.white);
+    buttonPanel.setBackground(Color.black);
+    buttonPanel.setBorder(new EmptyBorder(0,0,0,0));
     ActionListener act = new ActionListener() {
       @Override
       public void actionPerformed(ActionEvent e) {
@@ -723,15 +783,7 @@ public class BouncyActivity extends JFrame implements Context {
     for (gameButtons lab : gameButtons.values()) {
       buttonPanel.add(lab.addButton(act));
     }
-    unlimitedBallsCheckBox = new JCheckBox("Unlimited Balls");
-    unlimitedBallsCheckBox.setSelected(unlimitedBallsToggle);
-    unlimitedBallsCheckBox.addItemListener(new ItemListener() {
-      @Override
-      public void itemStateChanged(ItemEvent e) {
-        unlimitedBallsToggle = (e.getStateChange() == ItemEvent.SELECTED);
-      }
-    });
-    buttonPanel.add(unlimitedBallsCheckBox);
+
     contentPane.add(buttonPanel, BorderLayout.SOUTH);
     // TODO: ADD THE MENUS TO THE MENU BAR AND THE BUTTONS TO A PANEL IN THE BOTTOM
 
@@ -739,19 +791,31 @@ public class BouncyActivity extends JFrame implements Context {
     JMenuBar menuBar = new JMenuBar();
     menuBar.setOpaque(true);
     menuBar.setPreferredSize(new Dimension(400, 20));
-    JMenu menu = new JMenu("File");
-    menu.add(new RunnableAction("Next Table", new Runnable() {
+    fileMenu = new JMenu("File");
+    fileMenu.add(new RunnableAction("Next Table", new Runnable() {
       @Override
       public void run() {
         BouncyActivity.this.doNextTable(null);
+      }}
+    ));
+    fileMenu.add(new RunnableAction("Previous Table", new Runnable() {
+      @Override
+      public void run() {
+        BouncyActivity.this.doPreviousTable(null);
       }}));
-    menu.add(new RunnableAction("Exit", new Runnable() {
+    fileMenu.add(new RunnableAction("Preferences", new Runnable() {
+      @Override
+      public void run() {
+        StartView prefsDialog = new StartView(BouncyActivity.this);
+        updateFromPreferences();
+      }}));
+    fileMenu.add(new RunnableAction("Exit", new Runnable() {
       @Override
       public void run() {
           doEndGame(null);
           BouncyActivity.this.dispose();
       }}));
-    menuBar.add(menu);
+    menuBar.add(fileMenu);
     this.setJMenuBar(menuBar);
     onCreate();
     //unpauseGame();
@@ -775,4 +839,39 @@ public class BouncyActivity extends JFrame implements Context {
   public Assets getAssets() {
     return new Assets(new File("src/main/assets/"));
   }
+
+  @Override
+  /** Get the localized format string for the given key and return the
+   *  formatted string given the arguments.
+   */
+  public String getString(String string, Object... args) {
+    return stringResolver.resolveString(string, args);
+  }
+
+  @Override
+  public void keyTyped(KeyEvent e) {
+    // TODO Auto-generated method stub
+    switch (Character.toLowerCase(e.getKeyChar())) {
+    case 's':
+      doStartGame(null);
+      break;
+    case 'e':
+      doEndGame(null);
+      break;
+    case 'p':
+      onPause();
+      break;
+    case 'r':
+      onResume();
+      break;
+    }
+  }
+
+  @Override
+  public void keyPressed(KeyEvent e) { }
+
+  @Override
+  public void keyReleased(KeyEvent e) { }
+
+
 }

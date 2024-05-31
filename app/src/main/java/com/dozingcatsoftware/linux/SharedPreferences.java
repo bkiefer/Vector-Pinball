@@ -7,10 +7,8 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
-import com.badlogic.gdx.utils.Json;
 import org.json.JSONException;
 import org.json.JSONObject;
-import org.json.JSONParserConfiguration;
 import org.json.JSONTokener;
 
 public class SharedPreferences {
@@ -31,6 +29,10 @@ public class SharedPreferences {
 
     public void putInt(String key, int anInt) {
       _prefs.put(key, anInt);
+    }
+
+    public void putBoolean(String key, boolean b) {
+       _prefs.put(key, b);
     }
 
     public void commit() {
@@ -64,13 +66,12 @@ public class SharedPreferences {
     return _prefs.containsKey(key) ? (Integer)_prefs.get(key) : l;
   }
 
-  public Editor edit() {
-    return new Editor();
+  public boolean getBoolean(String key, boolean b) {
+    return _prefs.containsKey(key) ? (Boolean)_prefs.get(key) : b;
   }
 
-  public boolean getBoolean(String key, boolean b) {
-    // TODO Auto-generated method stub
-    return _prefs.containsKey(key) ? (Boolean)_prefs.get(key) : b;
+  public Editor edit() {
+    return new Editor();
   }
 
   public static SharedPreferences loadSharedPreferences() {

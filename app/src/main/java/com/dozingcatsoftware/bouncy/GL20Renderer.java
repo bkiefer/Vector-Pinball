@@ -17,22 +17,22 @@ import com.dozingcatsoftware.vectorpinball.model.IFieldRenderer;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.IntBuffer;
-import java.util.Arrays;
 import java.util.function.Function;
 
 import com.jogamp.opengl.GLES2;
 import com.jogamp.opengl.GLAutoDrawable;
 import com.jogamp.opengl.GLEventListener;
-import com.jogamp.opengl.math.Matrix4;
-import com.jogamp.opengl.math.VectorUtil;
+import com.jogamp.opengl.math.Matrix4f;
+import com.jogamp.opengl.math.Vec3f;
 /*
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
 */
 
 //@TargetApi(Build.VERSION_CODES.GINGERBREAD)
-public class GL20Renderer implements IFieldRenderer.FloatOnlyRenderer,
+public class GL20Renderer<GLV extends GLES2> implements IFieldRenderer.FloatOnlyRenderer,
     GLEventListener { //GLSurfaceView.Renderer {
+
     static final double TAU = 2 * Math.PI;
 
     private final GLFieldView glView;
@@ -69,7 +69,7 @@ public class GL20Renderer implements IFieldRenderer.FloatOnlyRenderer,
         CIRCLE,
     }
 
-    private class ShapeBatch {
+    private static class ShapeBatch {
         ShapeType shape;
         int startIndex;
         int count;
@@ -81,7 +81,7 @@ public class GL20Renderer implements IFieldRenderer.FloatOnlyRenderer,
 
     public GL20Renderer(GLFieldView view, Function<String, String> shaderLookupFn) {
         this.glView = view;
-        // TODO: MAYBE SOMETHING HAS TO BE DONE HERE
+        // TODO: Seems to work without this
         /*
         view.getHolder().setFormat(PixelFormat.RGBA_8888);
         view.getHolder().setFormat(PixelFormat.TRANSPARENT);
@@ -160,16 +160,17 @@ public class GL20Renderer implements IFieldRenderer.FloatOnlyRenderer,
         return LITTLE_ENDIAN ? Color.toAGBR(color) : Color.toRGBA(color);
     }
 
-    private int loadShader(GLES2 GLES20, int type, String shaderPath) {
+    private int loadShader(GLV GLES20, int type, String shaderPath) {
         String[] src = { this.shaderLookupFn.apply(shaderPath) };
         int[] srclen = { src[0].length() };
         int shaderId = GLES20.glCreateShader(type);
-        GLES20.glShaderSource(shaderId, 1, src, srclen, 0);
+        GLES20.glShaderSource(shaderId, src.length, src, srclen, 0);
         GLES20.glCompileShader(shaderId);
+
         return shaderId;
     }
 
-    private int createProgram(GLES2 GLES20, String vertexShaderPath, String fragmentShaderPath) {
+    private int createProgram(GLV GLES20, String vertexShaderPath, String fragmentShaderPath) {
         int programId = GLES20.glCreateProgram();
         GLES20.glAttachShader(programId, loadShader(GLES20, GLES20.GL_VERTEX_SHADER, vertexShaderPath));
         GLES20.glAttachShader(programId, loadShader(GLES20, GLES20.GL_FRAGMENT_SHADER, fragmentShaderPath));
@@ -177,7 +178,7 @@ public class GL20Renderer implements IFieldRenderer.FloatOnlyRenderer,
         return programId;
     }
 
-    private void initShaders(GLES2 GLES20) {
+    private void initShaders(GLV GLES20) {
         circleProgramId = createProgram(GLES20, "shaders/circle.vert", "shaders/circle.frag");
         circleMvpMatrixHandle = GLES20.glGetUniformLocation(circleProgramId, "uMVPMatrix");
         circlePositionHandle = GLES20.glGetAttribLocation(circleProgramId, "position");
@@ -310,6 +311,35 @@ public class GL20Renderer implements IFieldRenderer.FloatOnlyRenderer,
      * @param eye_center_up
      */
     private static void setLookAtM(float[] viewMatrix, int offset,
+        float eye_x, float eye_y, float eye_z,
+        float center_x, float center_y, float center_z,
+        float up_x, float up_y, float up_z) {
+      Vec3f eye = new Vec3f(eye_x, eye_y, eye_z);
+      Vec3f center = new Vec3f(center_x, center_y, center_z);
+      Vec3f up = new Vec3f(up_x, up_y, up_z);
+
+      Vec3f[] axis = new Vec3f[3];
+      axis[2] = new Vec3f(eye).sub(center); // zaxis
+      axis[2].normalize();
+
+      axis[0] = new Vec3f(up).cross(axis[2]).normalize();
+
+      axis[1] = axis[2].cross(axis[0]);
+      for (int ax = 0; ax < 3; ++ax) {
+        for (int i = 0; i < 3; ++i) {
+          viewMatrix[ax * 4 + i] = axis[ax].get(i);
+        }
+        viewMatrix[ax * 4 + 3] = - axis[ax].dot(eye);
+      }
+      for (int c = 0; c < 3; ++c) {
+        viewMatrix[12 + c] = 0.0f;
+      }
+      viewMatrix[15] = 1f;
+    }
+
+
+    /*
+    private static void setLookAtM(float[] viewMatrix, int offset,
         float ... eye_center_up) {
       float[] eye = Arrays.copyOfRange(eye_center_up, 0, 3);
       float[] center = Arrays.copyOfRange(eye_center_up, 3, 6);
@@ -331,6 +361,7 @@ public class GL20Renderer implements IFieldRenderer.FloatOnlyRenderer,
       }
       viewMatrix[15] = 1;
     }
+    */
 
     private static void MMultiply(float[] result, float[]a, float[]b) {
       for (int row = 0; row < 4; ++row) {
@@ -343,7 +374,7 @@ public class GL20Renderer implements IFieldRenderer.FloatOnlyRenderer,
       }
     }
 
-    private void endDraw(GLES2 gl) {
+    private void endDraw(GLV gl) {
         if (circleProgramId == null) {
             initShaders(gl);
         }
@@ -358,25 +389,29 @@ public class GL20Renderer implements IFieldRenderer.FloatOnlyRenderer,
             0f, 0f, 0f, // center
             0f, 1.0f, 0.0f); // up
         */
+        /*
         setLookAtM(viewMatrix, 0,
             0f, 0f, 3f, //  eye
             0f, 0f, 0f, // center
             0f, 1.0f, 0.0f); // up
-
+         */
         float ratio = (float)getWidth() / getHeight();
 
         // Set up the projection matrix
         // m, index, left, right, bottom, top, near, far
         //Matrix.frustumM(projectionMatrix, 0, -ratio, ratio, -1, 1, 3, 7);
-
-        Matrix4 pm = new Matrix4();
-        pm.makeFrustum(-ratio, ratio, -1, 1, 3, 7);
-        System.arraycopy(pm.getMatrix(), 0,
-            projectionMatrix, 0, projectionMatrix.length);
+        /*
+        Matrix4f pm = new Matrix4f();
+        pm.setToFrustum(-ratio, ratio, -1f, 1f, .1f, .2f);
+        pm.get(projectionMatrix);
+        */
+        Matrix4f pm = new Matrix4f().loadIdentity();
+        pm.translate(0.0f, 0.0f, -0.01f, new Matrix4f());
+        pm.get(vPMatrix);
 
         // Calculate the projection and view transformation
         //Matrix.MMultiply(vPMatrix, 0, projectionMatrix, 0, viewMatrix, 0);
-        MMultiply(vPMatrix, projectionMatrix, viewMatrix);
+        //MMultiply(vPMatrix, projectionMatrix, viewMatrix);
 
         prepareBuffers();
         for (int i = 0; i < numShapeBatches; i++) {
@@ -413,12 +448,12 @@ public class GL20Renderer implements IFieldRenderer.FloatOnlyRenderer,
         lineVertexIndices.put(tmpLineVertexIndices, 0, numLineVertexIndices);
     }
 
-    private void unbindBuffers(GLES2 GLES20) {
+    private void unbindBuffers(GLV GLES20) {
         GLES20.glBindBuffer(GLES20.GL_ARRAY_BUFFER, 0);
         GLES20.glBindBuffer(GLES20.GL_ELEMENT_ARRAY_BUFFER, 0);
     }
 
-    private void drawCircles(GLES2 GLES20, int offset, int count) {
+    private void drawCircles(GLV GLES20, int offset, int count) {
         GLES20.glUseProgram(circleProgramId);
         GLES20.glUniformMatrix4fv(circleMvpMatrixHandle, 1, false, vPMatrix, 0);
 
@@ -472,7 +507,7 @@ public class GL20Renderer implements IFieldRenderer.FloatOnlyRenderer,
         GLES20.glDisableVertexAttribArray(circleInnerRadiusSquaredHandle);
     }
 
-    private void drawLines(GLES2 GLES20, int offset, int count) {
+    private void drawLines(GLV GLES20, int offset, int count) {
         GLES20.glUseProgram(lineProgramId);
         GLES20.glUniformMatrix4fv(lineMvpMatrixHandle, 1, false, vPMatrix, 0);
 
@@ -873,7 +908,7 @@ public class GL20Renderer implements IFieldRenderer.FloatOnlyRenderer,
     boolean renderDone;
 
     //@Override public void onDrawFrame(GL10 gl10) {
-    public void onDrawFrame(GLES2 gl2) {
+    public void onDrawFrame(GLV gl2) {
         Field field = fvManager.getField();
         if (field == null) {
             return;
@@ -901,7 +936,7 @@ public class GL20Renderer implements IFieldRenderer.FloatOnlyRenderer,
       this.glView.display();
     }
 
-    public void doDraw(GLES2 gl2) {
+    public void doDraw(GLV gl2) {
         synchronized (renderLock) {
             renderDone = false;
         }
@@ -935,7 +970,7 @@ public class GL20Renderer implements IFieldRenderer.FloatOnlyRenderer,
     */
 
     //@Override public void onSurfaceChanged(GL10 gl10, int x, int y, int width, int height) {
-    public void onSurfaceChanged(GLES2 GLES20, int x, int y, int width, int height) {
+    public void onSurfaceChanged(GLV GLES20, int x, int y, int width, int height) {
         GLES20.glViewport(x, y, width, height);
         GLES20.glClearColor( 0.0f, 0.0f, 0.0f, 1.0f );
         GLES20.glEnable(GLES20.GL_BLEND);
@@ -945,31 +980,38 @@ public class GL20Renderer implements IFieldRenderer.FloatOnlyRenderer,
         float ratio = (float) width / height;
         //Matrix.frustumM(projectionMatrix, 0, -ratio, ratio, -1, 1, 3, 7);
         // computed in endDraw anyway?
-        Matrix4 pm = new Matrix4();
-        pm.makeFrustum(-ratio, ratio, -1, 1, 3, 7);
-        System.arraycopy(pm.getMatrix(), 0,
-            projectionMatrix, 0, projectionMatrix.length);
+        /*Matrix4f pm = new Matrix4f();
+        pm.setToFrustum(-ratio, ratio, -1, 1, 3, 7);
+        pm.get(projectionMatrix);*/
+    }
+
+    @SuppressWarnings("unchecked")
+    private GLV getGLV(GLAutoDrawable drawobj) {
+      return (GLV)drawobj.getGL().getGLES2();
     }
 
     @Override
     public void display(GLAutoDrawable drawobj) {
-      doDraw(drawobj.getGL().getGLES2());
+      doDraw(getGLV(drawobj));
     }
 
     @Override
     public void dispose(GLAutoDrawable drawobj) {
       // TODO: WHAT TO DO HERE?
+      // Release all GL related resources that have
+      // been allocated, such as buffers and programs
+
     }
 
     @Override
     public void init(GLAutoDrawable drawobj) {
-      GLES2 gl = drawobj.getGL().getGLES2();
+      GLV gl = getGLV(drawobj);
       initShaders(gl);
     }
 
     @Override
     public void reshape(GLAutoDrawable drawobj, int x, int y, int width, int height) {
-      onSurfaceChanged(drawobj.getGL().getGLES2(), x, y, width, height);
+      onSurfaceChanged(getGLV(drawobj), x, y, width, height);
     }
 
 }

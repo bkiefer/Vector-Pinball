@@ -1,7 +1,10 @@
 package com.dozingcatsoftware.linux;
 
 public class PreferenceManager {
+  private static SharedPreferences instance = null;
   static SharedPreferences getDefaultSharedPreferences(Object o) {
-    return SharedPreferences.loadSharedPreferences();
+    if (instance == null)
+      instance = SharedPreferences.loadSharedPreferences();
+    return instance;
   }
 }

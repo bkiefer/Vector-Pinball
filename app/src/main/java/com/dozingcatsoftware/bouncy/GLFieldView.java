@@ -1,5 +1,6 @@
 package com.dozingcatsoftware.bouncy;
 
+import java.awt.Container;
 /*
 import android.content.Context;
 import android.opengl.GLSurfaceView;
@@ -14,7 +15,6 @@ import java.util.Map;
 
 import javax.swing.text.AttributeSet;
 
-import com.dozingcatsoftware.linux.BouncyActivity;
 import com.jogamp.opengl.GLCapabilities;
 import com.jogamp.opengl.awt.GLCanvas;
 
@@ -56,8 +56,13 @@ public class GLFieldView extends GLCanvas implements KeyListener
     }
     */
 
+    // Pass on keyevents to the parent frame
     @Override public void keyTyped(KeyEvent event) {
-
+      Container p = getParent();
+      while (! (p instanceof KeyListener)) {
+        p = p.getParent();
+      }
+      ((KeyListener)p).keyTyped(event);
     }
 
     private static Map<Integer, Integer> KEYMAP = new HashMap<>();
@@ -70,16 +75,14 @@ public class GLFieldView extends GLCanvas implements KeyListener
     public void keyPressed(KeyEvent e) {
       Integer code = KEYMAP.get(e.getKeyCode());
       if (code == null) return;
-      boolean done = manager.handleKeyDown(code, com.dozingcatsoftware.linux.KeyEvent.DOWN_EVENT);
-      BouncyActivity.logger.info("Flipper up: {}", done ? "yes" : "no");
+      manager.handleKeyDown(code, com.dozingcatsoftware.linux.KeyEvent.DOWN_EVENT);
     }
 
     @Override
     public void keyReleased(KeyEvent e) {
       Integer code = KEYMAP.get(e.getKeyCode());
       if (code == null) return;
-      boolean done = manager.handleKeyUp(code, com.dozingcatsoftware.linux.KeyEvent.UP_EVENT);
-      BouncyActivity.logger.info("Flipper down: {}", done ? "yes" : "no");
+      manager.handleKeyUp(code, com.dozingcatsoftware.linux.KeyEvent.UP_EVENT);
     }
 
     public void onPause() {
