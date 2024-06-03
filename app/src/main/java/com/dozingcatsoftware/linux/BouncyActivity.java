@@ -178,9 +178,7 @@ public class BouncyActivity extends JFrame implements Context, KeyListener {
 
   StringResolver stringResolver;
 
-  //JButton[] button = new JButton[gameButtons.values().length];
   boolean unlimitedBallsToggle = false;
-  //JCheckBox unlimitedBallsCheckBox;
 
   ScoreView scoreView = new ScoreView(this);
 
@@ -203,6 +201,8 @@ public class BouncyActivity extends JFrame implements Context, KeyListener {
 
   FieldDriver fieldDriver = new FieldDriver();
   FieldViewManager fieldViewManager = new FieldViewManager();
+
+  boolean scoreUpdated = false;
 
   public Object getBaseContext() { return null; }
 
@@ -247,13 +247,6 @@ public class BouncyActivity extends JFrame implements Context, KeyListener {
       return String.format(strings.get(key), params);
     }
   }
-
-  /*
-  IStringResolver stringLookupFn = (key, params) -> {
-    int stringId = getResources().getIdentifier(key, "string", getPackageName());
-    return getString(stringId, params);
-  };
-  */
 
   // TODO: PLAY AUDIO
   Field field = new Field(System::currentTimeMillis,
@@ -381,10 +374,8 @@ public class BouncyActivity extends JFrame implements Context, KeyListener {
           // synchronized because that can deadlock the FieldDriver thread.
           // All of this concurrency is badly in need of refactoring.
           synchronized (field) {
-              //buttonPanel.setVisibility(View.GONE);
-              //highScorePanel.setVisibility(View.GONE);
               resetFieldForCurrentLevel();
-
+              scoreUpdated = false;
               if (//unlimitedBallsToggle.isChecked()
                   unlimitedBallsToggle) {
                   field.startGameWithUnlimitedBalls();
@@ -475,13 +466,7 @@ public class BouncyActivity extends JFrame implements Context, KeyListener {
       scoreView.setFPS(fieldDriver.getAverageFPS());
       scoreView.setDebugMessage(field.getDebugMessage());
       scoreView.update();
-      updateButtons();
-      /*
-      GameState state = field.getGameState();
-      if (state.getTotalBalls() == state.getBallNumber()) {
-        doEndGame(null);
-      }
-      */
+      updateHighScoreAndButtonPanel();
   }
 
   /**
@@ -491,7 +476,8 @@ public class BouncyActivity extends JFrame implements Context, KeyListener {
   void updateHighScoreAndButtonPanel() {
       synchronized (field) {
           GameState state = field.getGameState();
-          if (!state.isGameInProgress()) {
+          if (! state.isGameInProgress() && !scoreUpdated) {
+              scoreUpdated = true;
               updateButtons();
 
               // No high scores for unlimited balls.
@@ -499,7 +485,7 @@ public class BouncyActivity extends JFrame implements Context, KeyListener {
                   long score = field.getGameState().getScore();
                   // Add to high scores list if the score beats the lowest existing high score,
                   // or if all the high score slots aren't taken.
-                  if (score > highScores.get(0) ||
+                  if (score > highScores.get(highScores.size() - 1) ||
                           highScores.size() < MAX_NUM_HIGH_SCORES) {
                       this.updateHighScoreForCurrentLevel(score);
                   }

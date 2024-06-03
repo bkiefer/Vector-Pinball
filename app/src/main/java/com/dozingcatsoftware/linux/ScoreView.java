@@ -1,13 +1,17 @@
 package com.dozingcatsoftware.linux;
 
-import java.awt.Canvas;
 import java.awt.Color;
+import java.awt.Component;
 import java.awt.Dimension;
+import java.awt.Font;
 import java.awt.Image;
+import java.awt.event.ComponentAdapter;
+import java.awt.event.ComponentEvent;
 import java.text.NumberFormat;
 import java.util.List;
 
 import javax.swing.Box;
+import javax.swing.Box.Filler;
 import javax.swing.BoxLayout;
 import javax.swing.Icon;
 import javax.swing.ImageIcon;
@@ -26,18 +30,6 @@ public class ScoreView extends JPanel {
 
     private static final long serialVersionUID = -4589110350465936240L;
     Field field;
-    /*
-    Paint textPaint = new Paint();
-    Rect textRect = new Rect();
-
-    Paint fpsPaint = new Paint();
-
-    Paint usedBallPaint = new Paint();
-    Paint remainingBallPaint = new Paint();
-    Paint multiplierPaint = new Paint();
-    int backgroundColor = Color.argb(255, 24, 24, 24);
-    DisplayMetrics metrics = new DisplayMetrics();
-*/
 
     List<Long> highScores;
     Long lastUpdateTime;
@@ -54,7 +46,7 @@ public class ScoreView extends JPanel {
     boolean showFPS = false;
 
     String debugMessage = null;
-
+    Filler fill;
     JLabel scoreField;
     JLabel multField;
     JLabel fpsField;
@@ -76,27 +68,31 @@ public class ScoreView extends JPanel {
     public ScoreView(BouncyActivity f) {
       frame = f;
       this.setBackground(Color.black);
+      fill = (Filler)Box.createRigidArea(new Dimension(10,0));
+      add(fill);
       setLayout(new BoxLayout(this, BoxLayout.LINE_AXIS));
       add(Box.createHorizontalGlue());
-      //JLabel sc = new JLabel("Score: ");
-      //sc.setBackground(Color.black);
-      //sc.setForeground(Color.white);
-      //add(sc);
       scoreField = newBWLabel();
+      Font font = scoreField.getFont();
+      scoreField.setFont(font.deriveFont(1.5f * font.getSize()));
       scoreField.setForeground(Color.yellow);
       scoreField.setText("0");
+      scoreField.setAlignmentX(Component.CENTER_ALIGNMENT);
       add(scoreField);
       add(Box.createHorizontalGlue());
+      JPanel right = new JPanel();
+      right.setBackground(Color.black);
+      right.setLayout(new BoxLayout(right, BoxLayout.LINE_AXIS));
+      add(right);
       fpsField = newBWLabel();
-      //fpsField.setText("0");
-      add(fpsField);
-      add(Box.createRigidArea(new Dimension(10,0)));
+      right.add(fpsField);
+      right.add(Box.createRigidArea(new Dimension(10,0)));
       multField = newBWLabel();
       multField.setText("");
-      add(multField);
-      add(Box.createRigidArea(new Dimension(10,0)));
+      right.add(multField);
+      right.add(Box.createRigidArea(new Dimension(10,0)));
       ballField = new JLabel();
-      add(ballField);
+      right.add(ballField);
       balls = new Icon[5];
       for (int i = 0; i < balls.length; ++i) {
         java.net.URL imageURL = ClassLoader.getSystemResource("icons/balls"+ i +".png");
@@ -111,30 +107,13 @@ public class ScoreView extends JPanel {
       }
       ballField.setIcon(balls[0]);
 
-      /*
-        textPaint.setARGB(255, 255, 255, 0);
-        textPaint.setAntiAlias(true);
-        // setTextSize uses absolute pixels, get screen density to scale.
-        WindowManager windowManager =
-                (WindowManager) context.getSystemService(Context.WINDOW_SERVICE);
-        windowManager.getDefaultDisplay().getMetrics(metrics);
-        textPaint.setTextSize(24 * metrics.density);
-
-        fpsPaint.setARGB(255, 255, 255, 0);
-        fpsPaint.setTextSize(9 * metrics.density);
-        fpsPaint.setAntiAlias(true);
-
-        multiplierPaint.setARGB(255, 32, 224, 32);
-        multiplierPaint.setTextSize(12 * metrics.density);
-        multiplierPaint.setAntiAlias(true);
-
-        usedBallPaint.setARGB(255, 128, 128, 128);
-        usedBallPaint.setStyle(Paint.Style.STROKE);
-        usedBallPaint.setAntiAlias(true);
-        remainingBallPaint.setARGB(255, 224, 224, 224);
-        remainingBallPaint.setStyle(Paint.Style.FILL);
-        remainingBallPaint.setAntiAlias(true);
-        */
+      addComponentListener(new ComponentAdapter() {
+        @Override
+        public void componentResized(ComponentEvent componentEvent) {
+          fill.changeShape(right.getMinimumSize(), right.getPreferredSize(),
+              right.getMaximumSize());
+        }
+      });
     }
 
     private Context getContext() {
@@ -164,7 +143,6 @@ public class ScoreView extends JPanel {
             ballInPlay = field.getBalls().size() > 0;
         }
 
-        //c.drawColor(backgroundColor);
         String displayString = (msg != null) ? msg.text : null;
         if (displayString == null) {
             // Show score if game is in progress, otherwise cycle between
@@ -211,58 +189,6 @@ public class ScoreView extends JPanel {
         if (displayString != null) {
           scoreField.setText(displayString);
         }
-        /*
-        int width = this.getWidth();
-        int height = this.getHeight();
-        textPaint.getTextBounds(displayString, 0, displayString.length(), textRect);
-        // textRect ends up being too high
-        c.drawText(
-                displayString,
-                width / 2.0f - textRect.width() / 2.0f, height / 2.0f + textRect.height() / 3.0f,
-                textPaint);
-        if (showFPS && fps > 0) {
-            c.drawText(String.format("%.1f fps", fps), 16 * metrics.density, height * 0.25f, fpsPaint);
-        }
-        if (debugMessage != null) {
-            c.drawText(debugMessage, width * 0.02f, height * 0.75f, fpsPaint);
-        }
-        if (gameInProgress) {
-            // Draw balls.
-            float ballRadius = height / 10f;
-            float ballPaintWidth = ballRadius / 3.2f;
-            usedBallPaint.setStrokeWidth(ballPaintWidth);
-            remainingBallPaint.setStrokeWidth(ballPaintWidth);
-            float ballOuterMargin = 2 * ballRadius;
-            float ballCenterY = height - (ballOuterMargin + ballRadius);
-            float ballRightmostCenterX = width - ballOuterMargin - ballRadius;
-            float distanceBetweenBallCenters = 2 * ballRadius + ballRadius;
-            if (unlimitedBalls) {
-                // Attempt to show an "infinite" series of balls getting progressively smaller.
-                float vanishingBallRadius = ballRadius;
-                for (int i = 4; i >= 0; i--) {
-                    float ballCenterX = ballRightmostCenterX - (i * distanceBetweenBallCenters);
-                    c.drawCircle(ballCenterX, ballCenterY, vanishingBallRadius, remainingBallPaint);
-                    vanishingBallRadius *= 0.8f;
-                }
-            }
-            else {
-                for (int i = 0; i < totalBalls; i++) {
-                    float ballCenterX = ballRightmostCenterX - (i * distanceBetweenBallCenters);
-                    // "Remove" ball from display when launched.
-                    boolean isRemaining = (currentBall + i + (ballInPlay ? 1 : 0) <= totalBalls);
-                    c.drawCircle(ballCenterX, ballCenterY, ballRadius,
-                            isRemaining ? remainingBallPaint : usedBallPaint);
-                }
-            }
-            // Draw multiplier if >1. Use X position of ball third from the right.
-            if (multiplier > 1) {
-                int intValue = (int) multiplier;
-                String multiplierString = (multiplier == intValue) ?
-                        intValue + "x" : String.format("%.2fx", multiplier);
-                float messageStartX = ballRightmostCenterX - 2 * distanceBetweenBallCenters - ballRadius;
-                c.drawText(multiplierString, messageStartX, height * 0.4f, multiplierPaint);
-            }
-        }*/
         this.invalidate();
     }
 
@@ -283,7 +209,7 @@ public class ScoreView extends JPanel {
                     gameOverMessageIndex = HIGH_SCORE_MESSAGE;
                     highScoreIndex = 0;
                 }
-                //break;
+                break;
             case LAST_SCORE_MESSAGE:
                 if (highScores.get(0) > 0) {
                     gameOverMessageIndex = HIGH_SCORE_MESSAGE;
