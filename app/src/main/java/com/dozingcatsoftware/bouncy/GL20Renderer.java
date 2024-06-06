@@ -1,5 +1,10 @@
 package com.dozingcatsoftware.bouncy;
 
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.nio.IntBuffer;
+import java.util.function.Function;
+
 /*
 import android.annotation.TargetApi;
 import android.graphics.PixelFormat;
@@ -13,13 +18,7 @@ import com.dozingcatsoftware.bouncy.util.TrigLookupTable;
 import com.dozingcatsoftware.vectorpinball.model.Color;
 import com.dozingcatsoftware.vectorpinball.model.Field;
 import com.dozingcatsoftware.vectorpinball.model.IFieldRenderer;
-
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-import java.nio.IntBuffer;
-import java.util.function.Function;
-
-import com.jogamp.opengl.GLES2;
+import com.jogamp.opengl.GL3;
 import com.jogamp.opengl.GLAutoDrawable;
 import com.jogamp.opengl.GLEventListener;
 import com.jogamp.opengl.math.Matrix4f;
@@ -30,7 +29,7 @@ import javax.microedition.khronos.opengles.GL10;
 */
 
 //@TargetApi(Build.VERSION_CODES.GINGERBREAD)
-public class GL20Renderer<GLV extends GLES2> implements IFieldRenderer.FloatOnlyRenderer,
+public class GL20Renderer<GLV extends GL3> implements IFieldRenderer.FloatOnlyRenderer,
     GLEventListener { //GLSurfaceView.Renderer {
 
     static final double TAU = 2 * Math.PI;
@@ -402,13 +401,20 @@ public class GL20Renderer<GLV extends GLES2> implements IFieldRenderer.FloatOnly
         //Matrix.frustumM(projectionMatrix, 0, -ratio, ratio, -1, 1, 3, 7);
         /*
         Matrix4f pm = new Matrix4f();
-        pm.setToFrustum(-ratio, ratio, -1f, 1f, .1f, .2f);
+        pm.setToFrustum(-ratio, ratio, -1f, 1f, 1f, 2f);
         pm.get(projectionMatrix);
         */
         Matrix4f pm = new Matrix4f().loadIdentity();
         pm.translate(0.0f, 0.0f, -0.01f, new Matrix4f());
+        /*
+        pm.setToPerspective(
+            0.79f, // (45deg)The vertical Field of View, in radians: the amount of "zoom". Think "camera lens". Usually between 90° (extra wide) and 30° (quite zoomed in)
+            ratio,       // Aspect Ratio. Depends on the size of your window. Notice that 4/3 == 800/600 == 1280/960, sounds familiar?
+            1.7f,              // Near clipping plane. Keep as big as possible, or you'll get precision issues.
+            2.0f             // Far clipping plane. Keep as little as possible.
+        );
+        */
         pm.get(vPMatrix);
-
         // Calculate the projection and view transformation
         //Matrix.MMultiply(vPMatrix, 0, projectionMatrix, 0, viewMatrix, 0);
         //MMultiply(vPMatrix, projectionMatrix, viewMatrix);
@@ -987,7 +993,7 @@ public class GL20Renderer<GLV extends GLES2> implements IFieldRenderer.FloatOnly
 
     @SuppressWarnings("unchecked")
     private GLV getGLV(GLAutoDrawable drawobj) {
-      return (GLV)drawobj.getGL().getGLES2();
+      return (GLV)drawobj.getGL().getGL3();
     }
 
     @Override

@@ -2,17 +2,9 @@ package com.dozingcatsoftware.linux;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
-import java.awt.Component;
 import java.awt.Dimension;
-import java.awt.Graphics;
-import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.awt.event.ComponentAdapter;
-import java.awt.event.ComponentEvent;
-import java.awt.event.ComponentListener;
-import java.awt.event.ItemEvent;
-import java.awt.event.ItemListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.event.WindowAdapter;
@@ -34,7 +26,6 @@ import java.util.function.Function;
 import javax.swing.AbstractAction;
 import javax.swing.AbstractButton;
 import javax.swing.JButton;
-import javax.swing.JCheckBox;
 import javax.swing.JDialog;
 import javax.swing.JFrame;
 import javax.swing.JList;
@@ -43,7 +34,6 @@ import javax.swing.JMenuBar;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
-import javax.swing.border.Border;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.LineBorder;
 import javax.swing.text.View;
@@ -63,6 +53,7 @@ import com.dozingcatsoftware.vectorpinball.model.FieldDriver;
 import com.dozingcatsoftware.vectorpinball.model.GameState;
 import com.dozingcatsoftware.vectorpinball.model.IStringResolver;
 import com.dozingcatsoftware.vectorpinball.util.IOUtils;
+import com.jogamp.opengl.GL3;
 import com.jogamp.opengl.GLCapabilities;
 import com.jogamp.opengl.GLES2;
 import com.jogamp.opengl.GLProfile;
@@ -174,7 +165,7 @@ public class BouncyActivity extends JFrame implements Context, KeyListener {
   JMenu fileMenu;
 
   GLFieldView glFieldView;
-  GL20Renderer<GLES2> gl20Renderer;
+  GL20Renderer<GL3> gl20Renderer;
 
   StringResolver stringResolver;
 
@@ -721,7 +712,7 @@ public class BouncyActivity extends JFrame implements Context, KeyListener {
     JPanel contentPane = new JPanel(new BorderLayout());
     this.setContentPane(contentPane);
 
-    GLProfile profile = GLProfile.get(GLProfile.GLES2);
+    GLProfile profile = GLProfile.get(GLProfile.GL3);
     GLCapabilities capabilities = new GLCapabilities(profile);
     // is a GLCanvas
     glFieldView = new GLFieldView(capabilities, null);
@@ -736,7 +727,7 @@ public class BouncyActivity extends JFrame implements Context, KeyListener {
       }
     };
     // is a GLEventListener
-    gl20Renderer = new GL20Renderer<GLES2>(glFieldView, fn);
+    gl20Renderer = new GL20Renderer<>(glFieldView, fn);
     gl20Renderer.setManager(fieldViewManager);
 
     contentPane.add(glFieldView, BorderLayout.CENTER);
