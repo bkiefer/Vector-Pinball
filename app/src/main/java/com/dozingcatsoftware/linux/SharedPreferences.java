@@ -84,6 +84,7 @@ public class SharedPreferences {
       }
     } catch (IOException ex) {
       BouncyActivity.logger.error("preferences could not be loaded: {}", ex.getMessage());
+      result._prefs = new HashMap<>();
     }
     return result;
   }
