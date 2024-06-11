@@ -50,7 +50,7 @@ public class FieldDriver {
     public void stop() {
         running = false;
         try {
-            gameThread.join();
+            gameThread.join(100);
         }
         catch (InterruptedException ex) {
         }

@@ -73,8 +73,6 @@ public class ScoreView extends JPanel {
       setLayout(new BoxLayout(this, BoxLayout.LINE_AXIS));
       add(Box.createHorizontalGlue());
       scoreField = newBWLabel();
-      Font font = scoreField.getFont();
-      scoreField.setFont(font.deriveFont(1.5f * font.getSize()));
       scoreField.setForeground(Color.yellow);
       scoreField.setText("0");
       scoreField.setAlignmentX(Component.CENTER_ALIGNMENT);
@@ -106,6 +104,7 @@ public class ScoreView extends JPanel {
         balls[i] = new ImageIcon(newimg);
       }
       ballField.setIcon(balls[0]);
+      setFontSize(12);
 
       addComponentListener(new ComponentAdapter() {
         @Override
@@ -118,6 +117,14 @@ public class ScoreView extends JPanel {
 
     private Context getContext() {
       return frame;
+    }
+
+    public void setFontSize(int pt) {
+      Font font = scoreField.getFont();
+      scoreField.setFont(font.deriveFont(1.5f * pt));
+      Font small = font.deriveFont(pt);
+      fpsField.setFont(small);
+      multField.setFont(small);
     }
 
     //@Override

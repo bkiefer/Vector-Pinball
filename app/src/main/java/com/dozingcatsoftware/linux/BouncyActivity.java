@@ -36,7 +36,6 @@ import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.LineBorder;
-import javax.swing.text.View;
 
 import org.json.JSONException;
 import org.json.XML;
@@ -55,7 +54,6 @@ import com.dozingcatsoftware.vectorpinball.model.IStringResolver;
 import com.dozingcatsoftware.vectorpinball.util.IOUtils;
 import com.jogamp.opengl.GL3;
 import com.jogamp.opengl.GLCapabilities;
-import com.jogamp.opengl.GLES2;
 import com.jogamp.opengl.GLProfile;
 
 
@@ -351,7 +349,7 @@ public class BouncyActivity extends JFrame implements Context, KeyListener {
   }
 
   // Button action methods defined by android:onClick values in main.xml.
-  public void doStartGame(View view) {
+  public void doStartGame() {
       if (field.getGameState().isPaused()) {
           unpauseGame();
           return;
@@ -380,7 +378,7 @@ public class BouncyActivity extends JFrame implements Context, KeyListener {
       }
   }
 
-  public void doEndGame(View view) {
+  public void doEndGame() {
       // Game might be paused, if manually ended from button.
       unpauseGame();
       synchronized (field) {
@@ -531,16 +529,16 @@ public class BouncyActivity extends JFrame implements Context, KeyListener {
       fieldDriver.resetFrameRate();
   }
 
-  public void doSwitchTable(View view) {
-      doNextTable(view);
+  public void doSwitchTable() {
+      doNextTable();
   }
 
-  public void doNextTable(View view) {
+  public void doNextTable() {
       int nextTableNum = (currentLevel == numberOfLevels) ? 1 : currentLevel + 1;
       switchToTable(nextTableNum);
   }
 
-  public void doPreviousTable(View view) {
+  public void doPreviousTable() {
       int prevTableNum = (currentLevel == 1) ? numberOfLevels : currentLevel - 1;
       switchToTable(prevTableNum);
   }
@@ -589,7 +587,7 @@ public class BouncyActivity extends JFrame implements Context, KeyListener {
     resetFieldForCurrentLevel();
 
     fieldViewManager.setField(field);
-    fieldViewManager.setStartGameAction(() -> doStartGame(null));
+    fieldViewManager.setStartGameAction(() -> doStartGame());
 
     //scoreView = findViewById(R.id.scoreView);
     scoreView.setField(field);
@@ -750,8 +748,8 @@ public class BouncyActivity extends JFrame implements Context, KeyListener {
       public void actionPerformed(ActionEvent e) {
         gameButtons b = gameButtons.valueOf(e.getActionCommand());
         switch (b) {
-        case start: doStartGame(null); break;
-        case end: doEndGame(null); break;
+        case start: doStartGame(); break;
+        case end: doEndGame(); break;
         case pause: onPause(); break;
         case resume: onResume(); break;
         }
@@ -772,13 +770,13 @@ public class BouncyActivity extends JFrame implements Context, KeyListener {
     fileMenu.add(new RunnableAction("Next Table", new Runnable() {
       @Override
       public void run() {
-        BouncyActivity.this.doNextTable(null);
+        BouncyActivity.this.doNextTable();
       }}
     ));
     fileMenu.add(new RunnableAction("Previous Table", new Runnable() {
       @Override
       public void run() {
-        BouncyActivity.this.doPreviousTable(null);
+        BouncyActivity.this.doPreviousTable();
       }}));
     fileMenu.add(new RunnableAction("Preferences", new Runnable() {
       @Override
@@ -789,7 +787,7 @@ public class BouncyActivity extends JFrame implements Context, KeyListener {
     fileMenu.add(new RunnableAction("Exit", new Runnable() {
       @Override
       public void run() {
-          doEndGame(null);
+          doEndGame();
           BouncyActivity.this.dispose();
       }}));
     menuBar.add(fileMenu);
@@ -830,10 +828,10 @@ public class BouncyActivity extends JFrame implements Context, KeyListener {
     // TODO Auto-generated method stub
     switch (Character.toLowerCase(e.getKeyChar())) {
     case 's':
-      doStartGame(null);
+      doStartGame();
       break;
     case 'e':
-      doEndGame(null);
+      doEndGame();
       break;
     case 'p':
       onPause();

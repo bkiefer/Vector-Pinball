@@ -116,7 +116,7 @@ public class StartView extends JDialog {
       JPanel lw = new JPanel();
       lw.setMinimumSize(new Dimension(30,0));
       //lw.setBorder(new LineBorder(Color.black));
-      lw.setLayout(new FlowLayout(FlowLayout.LEFT));
+      lw.setLayout(new FlowLayout(FlowLayout.CENTER));
       lw.add(Box.createRigidArea(new Dimension(5,0)));
 
       lineWidth = new JSpinner(
@@ -125,7 +125,7 @@ public class StartView extends JDialog {
       d.width = 50;
       lineWidth.setMaximumSize(d);
       lineWidth.setValue(prefs.getInt("lineWidth", 0));
-      lineWidth.setAlignmentX(Component.CENTER_ALIGNMENT);
+      //lineWidth.setAlignmentX(Component.CENTER_ALIGNMENT);
       lineWidth.addChangeListener(new ChangeListener() {
         @Override
         public void stateChanged(ChangeEvent ev) {
@@ -177,11 +177,34 @@ public class StartView extends JDialog {
         @Override
         public void actionPerformed(ActionEvent e) {
           frame.updateFromPreferences();
+          frame.doStartGame();
           StartView.this.dispose();
         }});
       okb.add(okbutton);
+      this.getRootPane().setDefaultButton(okbutton);
+
+      okb.add(Box.createRigidArea(new Dimension(40,10)));
+
+      JButton helpbutton = new JButton(new AbstractAction() {
+
+        private static final long serialVersionUID = 1L;
+        @Override
+        public Object getValue(String key) {
+          if (key == Action.NAME) return "Help";
+          return super.getValue(key);
+        }
+
+        @Override
+        public void actionPerformed(ActionEvent e) {
+          new AboutDialog(frame);
+        }});
+      okb.add(helpbutton);
 
       c.add(okb);
+
+      Dimension frameDim = frame.getSize();
+      this.setPreferredSize(new Dimension((int)(frameDim.width * 0.66),
+          (int)(frameDim.height * 0.66)));
       this.pack();
       this.setVisible(true);
     }
