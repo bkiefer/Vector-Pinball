@@ -793,10 +793,10 @@ public class BouncyActivity extends JFrame implements Context, KeyListener {
     menuBar.add(fileMenu);
     this.setJMenuBar(menuBar);
     onCreate();
-    //unpauseGame();
     // display the frame
     this.pack();
     this.setVisible(true);
+    new StartView(this);
   }
 
   public BouncyActivity(String title) {

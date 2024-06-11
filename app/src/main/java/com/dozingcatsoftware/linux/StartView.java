@@ -89,12 +89,11 @@ public class StartView extends JDialog {
       c.setLayout(new BoxLayout(c, BoxLayout.PAGE_AXIS));
       setContentPane(c);
       JLabel kt = new JLabel("Key Shortcuts");
-      //kt.setAlignmentX(CENTER_ALIGNMENT);
       c.add(kt);
       c.add(Box.createRigidArea(new Dimension(0,10)));
       helpField = new JLabel("<html>"
           + "Z -- Left Flipper<br>"
-          + "R -- Right Flipper<br>"
+          + "/ -- Right Flipper<br>"
           + "S -- Start Game<br>"
           + "E -- End Game<br>"
           + "P -- Pause Game<br>"

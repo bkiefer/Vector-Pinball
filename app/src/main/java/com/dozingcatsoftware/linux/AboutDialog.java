@@ -66,11 +66,6 @@ public class AboutDialog extends JDialog {
         @Override
         public Object getValue(String key) {
           if (key == Action.NAME) return "OK";
-          /*
-          if (key == Action.ACCELERATOR_KEY) {
-            return KeyStroke.getKeyStroke(KeyEvent.KEYCODE_ENTER, 0);
-          }
-          */
           return super.getValue(key);
         }
 
