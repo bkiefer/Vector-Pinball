@@ -4,6 +4,8 @@ import java.awt.BorderLayout;
 import java.awt.Container;
 import java.awt.Dimension;
 import java.awt.event.ActionEvent;
+import java.awt.event.ComponentAdapter;
+import java.awt.event.ComponentEvent;
 
 import javax.swing.AbstractAction;
 import javax.swing.Action;
@@ -13,6 +15,8 @@ import javax.swing.JButton;
 import javax.swing.JDialog;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.ScrollPaneConstants;
 
 /**
  * This class displays the score and game messages above the game view. When there is no game in
@@ -23,9 +27,6 @@ public class AboutDialog extends JDialog {
     private static final long serialVersionUID = -4589110350465936240L;
 
     BouncyActivity frame;
-
-    JLabel helpField;
-
 
     String toHtmlList(String input) {
       String htmlList = input.replaceAll("\\\\n-([^\\\\]*)", "<li>$1</li>\n");
@@ -44,9 +45,12 @@ public class AboutDialog extends JDialog {
 
     public AboutDialog(BouncyActivity fr) {
       super(fr, true);
+      //FlowLayout layout = new FlowLayout(FlowLayout.CENTER);
+      //this.setLayout(layout);
       frame = fr;
-      setLocationRelativeTo(fr);
-      Container c = getContentPane();
+      Dimension frameDim = frame.getSize();
+
+      Container c = getContentPane();//new JPanel();
       String about_text = fr.getString("about_text");
 
       String fieldName = "table" + fr.currentLevel + "_rules";
@@ -55,8 +59,7 @@ public class AboutDialog extends JDialog {
       about_text = about_text.replace("[TABLE_RULES]", toHtmlList(helpText));
       helpText = "<html>" + toHtmlLineBreaks(about_text) + "</html>";
 
-      helpField = new JLabel(helpText);
-      //helpField.setAlignmentX(CENTER_ALIGNMENT);
+      JLabel helpField = new JLabel(helpText);
       c.add(helpField, BorderLayout.CENTER);
 
       JButton okbutton = new JButton(new AbstractAction() {
@@ -82,11 +85,22 @@ public class AboutDialog extends JDialog {
       this.getRootPane().setDefaultButton(okbutton);
       c.add(south, BorderLayout.SOUTH);
 
-      Dimension frameDim = frame.getSize();
+      //c.setPreferredSize(new Dimension((int)(frameDim.width * 0.6),
+      //    (int)(frameDim.height * 0.6)));
+      //c.setSize(new Dimension((int)(frameDim.width * 0.6),
+      //    (int)(frameDim.height * 0.6)));
+
+
+      //this.setContentPane(c);
+
       this.setPreferredSize(new Dimension((int)(frameDim.width * 0.66),
-          (int)(frameDim.height * 0.66)));
+          frameDim.height * 075));
+      this.setSize(new Dimension((int)(frameDim.width * 0.66),
+          (int)(frameDim.height * 0.75)));
+
       this.pack();
       this.setVisible(true);
+      setLocationRelativeTo(fr);
     }
 
 

@@ -17,6 +17,7 @@
     <maven.compiler.source>11</maven.compiler.source>
     <maven.compiler.target>11</maven.compiler.target>
     <logback.version>1.4.14</logback.version>
+    <junit.version>4.13.2</junit.version>
   </properties>
 
   <dependencies>
@@ -77,6 +78,20 @@
       <version>2.5.0</version>
     </dependency>
 
+    <!-- https://mvnrepository.com/artifact/org.jcraft/jorbis -->
+    <dependency>
+      <groupId>org.jcraft</groupId>
+      <artifactId>jorbis</artifactId>
+      <version>0.0.17</version>
+    </dependency>
+
+    <!-- https://mvnrepository.com/artifact/com.googlecode.soundlibs/vorbisspi -->
+    <dependency>
+      <groupId>com.googlecode.soundlibs</groupId>
+      <artifactId>vorbisspi</artifactId>
+      <version>1.0.3.3</version>
+    </dependency>
+    
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
@@ -88,6 +103,13 @@
       <groupId>ch.qos.logback</groupId>
       <artifactId>logback-classic</artifactId>
       <version>${logback.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <version>${junit.version}</version>
+      <scope>test</scope>
     </dependency>
   </dependencies>
 
@@ -118,6 +140,20 @@
           </excludes>
         </configuration>
       </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-resources-plugin</artifactId>
+        <version>3.3.1</version>
+        <configuration>
+          <resources>
+            <resource><directory>src/main/resources</directory></resource>
+            <resource><directory>src/main/res</directory></resource>
+            <resource><directory>src/main/assets</directory></resource>
+          </resources>
+        </configuration>
+      </plugin>
+
       <plugin>
         <artifactId>maven-assembly-plugin</artifactId>
         <executions>

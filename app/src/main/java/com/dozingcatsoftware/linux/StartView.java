@@ -38,6 +38,9 @@ public class StartView extends JDialog {
     JCheckBox useZoom;
     JCheckBox showBallTrails;
     JCheckBox independentFlippers;
+    JCheckBox soundEnabled;
+    JCheckBox musicEnabled;
+
     JSpinner lineWidth;
     JCheckBox doShowFPS;
 
@@ -82,7 +85,6 @@ public class StartView extends JDialog {
 
     public StartView(BouncyActivity frame) {
       super(frame, true);
-      setLocationRelativeTo(frame);
       SharedPreferences prefs =
           PreferenceManager.getDefaultSharedPreferences(null);
       JPanel c = new JPanel();
@@ -106,11 +108,17 @@ public class StartView extends JDialog {
       useZoom = makeCheckBox(prefs, "zoom", "Zoom", true);
       c.add(useZoom);
 
-      showBallTrails= makeCheckBox(prefs, "showBallTrails", "Show Ball Trails", true);
+      showBallTrails = makeCheckBox(prefs, "showBallTrails", "Show Ball Trails", true);
       c.add(showBallTrails);
 
       independentFlippers = makeCheckBox(prefs, "independentFlippers", "Independent Flippers", true);
       c.add(independentFlippers);
+
+      soundEnabled = makeCheckBox(prefs, "sound", "Sound Enabled", true);
+      c.add(soundEnabled);
+
+      musicEnabled = makeCheckBox(prefs, "music", "Music Enabled", true);
+      c.add(musicEnabled);
 
       JPanel lw = new JPanel();
       lw.setMinimumSize(new Dimension(30,0));
@@ -204,9 +212,11 @@ public class StartView extends JDialog {
       Dimension frameDim = frame.getSize();
       this.setPreferredSize(new Dimension((int)(frameDim.width * 0.66),
           (int)(frameDim.height * 0.66)));
+      this.setSize(new Dimension((int)(frameDim.width * 0.66),
+          (int)(frameDim.height * 0.66)));
       this.pack();
       this.setVisible(true);
+      setLocationRelativeTo(frame);
     }
-
 
 }

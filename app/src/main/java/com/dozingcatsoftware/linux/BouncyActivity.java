@@ -46,7 +46,6 @@ import com.dozingcatsoftware.bouncy.FieldLayoutReader;
 import com.dozingcatsoftware.bouncy.FieldViewManager;
 import com.dozingcatsoftware.bouncy.GL20Renderer;
 import com.dozingcatsoftware.bouncy.GLFieldView;
-import com.dozingcatsoftware.vectorpinball.model.AudioPlayer;
 import com.dozingcatsoftware.vectorpinball.model.Field;
 import com.dozingcatsoftware.vectorpinball.model.FieldDriver;
 import com.dozingcatsoftware.vectorpinball.model.GameState;
@@ -240,8 +239,8 @@ public class BouncyActivity extends JFrame implements Context, KeyListener {
   // TODO: PLAY AUDIO
   Field field = new Field(System::currentTimeMillis,
       stringResolver = new StringResolver(),
-      //new VPSoundpool.Player()
-      AudioPlayer.NoOpPlayer.getInstance()
+      new VPSoundpool.Player()
+      //AudioPlayer.NoOpPlayer.getInstance()
       );
 
   void updateButtons() {
@@ -323,7 +322,7 @@ public class BouncyActivity extends JFrame implements Context, KeyListener {
 
 
   public void pauseGame() {
-      //VPSoundpool.pauseMusic();
+      VPSoundpool.pauseMusic();
       GameState state = field.getGameState();
       if (state.isPaused() || !state.isGameInProgress()) return;
       state.setPaused(true);
@@ -373,7 +372,7 @@ public class BouncyActivity extends JFrame implements Context, KeyListener {
                   field.startGame();
               }
           }
-          //VPSoundpool.playStart();
+          VPSoundpool.playStart();
           updateButtons();
       }
   }
@@ -576,8 +575,8 @@ public class BouncyActivity extends JFrame implements Context, KeyListener {
       fieldViewManager.setZoom(useZoom ? ZOOM_FACTOR : 1.0f);
 
 
-      //VPSoundpool.setSoundEnabled(prefs.getBoolean("sound", true));
-      //VPSoundpool.setMusicEnabled(prefs.getBoolean("music", true));
+      VPSoundpool.setSoundEnabled(prefs.getBoolean("sound", true));
+      VPSoundpool.setMusicEnabled(prefs.getBoolean("music", true));
       //useHapticFeedback = prefs.getBoolean("haptic", false);
   }
 
@@ -668,11 +667,22 @@ public class BouncyActivity extends JFrame implements Context, KeyListener {
     updateFromPreferences();
 
     // Initialize audio, loading resources in a separate thread.
-    /* TODO: ACTIVATE SOUND AT SOME TIME
+    /* TODO: ACTIVATE SOUND AT SOME TIME */
     VPSoundpool.initSounds(this);
-    (new Thread(VPSoundpool::loadSounds)).start();
-    this.setVolumeControlStream(AudioManager.STREAM_MUSIC);
-    */
+    VPSoundpool.loadSounds();
+    //(new Thread(VPSoundpool::loadSounds)).start();
+    //this.setVolumeControlStream(AudioManager.STREAM_MUSIC);
+    try {
+    VPSoundpool.playRollover();
+    Thread.sleep(200);
+    VPSoundpool.playRollover();
+    Thread.sleep(200);
+    VPSoundpool.playRollover();
+    Thread.sleep(200);
+    VPSoundpool.playRollover();
+    Thread.sleep(200);
+    VPSoundpool.playRollover();
+    } catch (Exception ex) {}
  }
 
   protected void initFrame() {
@@ -797,6 +807,7 @@ public class BouncyActivity extends JFrame implements Context, KeyListener {
     this.pack();
     this.setVisible(true);
     new StartView(this);
+    //new AboutDialog(this);
   }
 
   public BouncyActivity(String title) {
