@@ -1,5 +1,6 @@
 package com.dozingcatsoftware.linux;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
@@ -21,19 +22,46 @@ import org.slf4j.LoggerFactory;
 public class MediaPlayer {
   private static final Logger logger = LoggerFactory.getLogger(MediaPlayer.class);
 
-  public  static Clip loadSound(String path) {
+  public static AudioInputStream mono2stereo(AudioInputStream in) throws IOException {
+    byte[] mono = in.readAllBytes();
+    byte[] stereo = new byte[mono.length * 2];
+    int i = 0;
+    AudioFormat f = in.getFormat();
+    while (i < mono.length) {
+      for (int j = 0; j < f.getFrameSize(); j++) {
+        stereo[2*i] = mono[i];
+        ++i;
+      }
+    }
+    AudioFormat out = new AudioFormat(f.getEncoding(),
+        f.getSampleRate(),
+        f.getSampleSizeInBits(),
+        f.getChannels() * 2,
+        f.getFrameSize() * 2,
+        f.getFrameRate(),
+        f.isBigEndian());
+    return new AudioInputStream(
+        new ByteArrayInputStream(stereo), out, stereo.length);
+  }
+
+  public static AudioInputStream loadSoundStream(String path)
+      throws UnsupportedAudioFileException, IOException {
     InputStream in = ClassLoader.getSystemResourceAsStream(path);
     AudioInputStream audioStream;
+    audioStream = AudioSystem.getAudioInputStream(in);
+    AudioFormat f = audioStream.getFormat();
+    AudioFormat pcmFormat =
+        new AudioFormat(AudioFormat.Encoding.PCM_SIGNED, 44100, 16,
+            f.getChannels(), 2 * f.getChannels(), 44100,
+            false);
+    AudioInputStream pcmStream =
+        AudioSystem.getAudioInputStream(pcmFormat, audioStream);
+    return pcmStream;
+  }
+
+  public  static Clip loadSound(String path) {
     try {
-      audioStream = AudioSystem.getAudioInputStream(in);
-      AudioFormat f = audioStream.getFormat();
-      AudioFormat pcmFormat =
-          new AudioFormat(AudioFormat.Encoding.PCM_SIGNED, 44100, 16,
-              f.getChannels(),
-              2 * f.getChannels(), 44100,
-              false);
-      AudioInputStream pcmStream =
-          AudioSystem.getAudioInputStream(pcmFormat, audioStream);
+      AudioInputStream pcmStream = loadSoundStream(path);
       Clip c = AudioSystem.getClip();
       c.open(pcmStream);
       return c;

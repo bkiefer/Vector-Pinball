@@ -14,7 +14,6 @@ import java.util.stream.Stream;
 
 import javax.sound.sampled.Clip;
 import javax.sound.sampled.FloatControl;
-import javax.sound.sampled.LineUnavailableException;
 
 import org.junit.Ignore;
 import org.junit.Test;
@@ -23,13 +22,11 @@ public class TestSoundPlay {
 
   static boolean testAllSounds(Predicate<Path> cons) throws IOException {
     boolean[] error = {false};
-    //TinySound.init();
     try (Stream<Path> s = Files.find(Path.of("./src/main/assets/audio/"), 99999,
         new BiPredicate<Path, BasicFileAttributes>() {
 
           @Override
           public boolean test(Path t, BasicFileAttributes u) {
-            // TODO Auto-generated method stub
             Path f = t.getFileName();
             String n  = f.toString();
             return n.endsWith("ogg");
@@ -37,34 +34,23 @@ public class TestSoundPlay {
         })) {
       s.forEach(p -> { error[0] |= cons.test(p); });
     }
-    //TinySound.shutdown();
     return error[0];
   }
 
   Clip loadAndPlaySound(Path p) {
-    /*
-    AudioFormat fPrime = new AudioFormat(f.getEncoding(),
-        f.getSampleRate(),
-        f.getSampleSizeInBits(),
-        f.getChannels(),
-        f.getFrameSize(),
-        f.getFrameRate(),
-        f.isBigEndian());*/
     String name = p.subpath(4, p.getNameCount()).toString();
     Clip c = MediaPlayer.loadSound(name);
     c.setFramePosition(0);
     // values have min/max values, for now don't check for outOfBounds values
     FloatControl gainControl = (FloatControl)c.getControl(FloatControl.Type.MASTER_GAIN);
     gainControl.setValue(0.7f);
-    c.start(); // c.drain(); // uncomment to play it.
+    c.start(); // c.drain();
     return c;
   }
 
   @Ignore
   @Test
   public void testTinyConvClipPlay() throws IOException {
-    boolean[] error = {false};
-    //TinySound.init();
     List<Clip> clips = new ArrayList<>();
     assertFalse(testAllSounds(p -> {
         try {

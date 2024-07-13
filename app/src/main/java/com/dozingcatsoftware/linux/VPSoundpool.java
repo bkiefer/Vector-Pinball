@@ -15,10 +15,7 @@ import com.dozingcatsoftware.vectorpinball.model.AudioPlayer;
 public class VPSoundpool {
   private static final Logger logger = LoggerFactory.getLogger(VPSoundpool.class);
 
-  //private static SoundPool mSoundPool;
   private static HashMap<Integer, Clip> mSoundPoolMap = new HashMap<>();
-  //private static AudioManager  mAudioManager;
-  //private static Context mContext;
   private static Random mRandom = new Random();
 
   private static boolean soundEnabled = true;
@@ -209,10 +206,6 @@ public class VPSoundpool {
       soundsLoaded = true;
       resetMusicState();
       logger.info("loadSounds finished");
-
-  }
-
-  public static void initSounds(BouncyActivity bouncyActivity) {
 
   }
 

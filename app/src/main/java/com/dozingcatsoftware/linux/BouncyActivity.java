@@ -5,6 +5,8 @@ import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.ComponentAdapter;
+import java.awt.event.ComponentEvent;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.event.WindowAdapter;
@@ -157,7 +159,59 @@ public class BouncyActivity extends JFrame implements Context, KeyListener {
     public JButton getButton() {
       return buttons[this.ordinal()];
     }
+
+    public static void updateButtons(boolean gameInProgress, boolean paused) {
+      if (gameInProgress) {
+        // No table switching during game
+        //unlimitedBallsCheckBox.setEnabled(false);
+        if (paused) {
+          // resume and end game active
+          start.getButton().setEnabled(false);
+          end.getButton().setEnabled(true);
+          pause.getButton().setEnabled(false);
+          resume.getButton().setEnabled(true);
+        } else {
+          // Pause & end game active
+          start.getButton().setEnabled(false);
+          end.getButton().setEnabled(true);
+          pause.getButton().setEnabled(true);
+          resume.getButton().setEnabled(false);
+        }
+      } else {
+        // Game not in progress,
+        // show high score active, unlimited balls checker active
+        //unlimitedBallsCheckBox.setEnabled(true);
+        start.getButton().setEnabled(true);
+        end.getButton().setEnabled(false);
+        pause.getButton().setEnabled(false);
+        resume.getButton().setEnabled(false);
+      }
+    }
+
+    public static JPanel createButtonPanel(BouncyActivity ba) {
+      JPanel buttonPanel = new JPanel();
+      buttonPanel.setForeground(Color.white);
+      buttonPanel.setBackground(Color.black);
+      buttonPanel.setBorder(new EmptyBorder(0,0,0,0));
+      ActionListener act = new ActionListener() {
+        @Override
+        public void actionPerformed(ActionEvent e) {
+          gameButtons b = gameButtons.valueOf(e.getActionCommand());
+          switch (b) {
+          case start: ba.doStartGame(); break;
+          case end: ba.doEndGame(); break;
+          case pause: ba.onPause(); break;
+          case resume: ba.onResume(); break;
+          }
+        }
+      };
+      for (gameButtons lab : gameButtons.values()) {
+        buttonPanel.add(lab.addButton(act));
+      }
+      return buttonPanel;
+    }
   };
+
 
   JMenu fileMenu;
 
@@ -170,7 +224,8 @@ public class BouncyActivity extends JFrame implements Context, KeyListener {
 
   ScoreView scoreView = new ScoreView(this);
 
-  public static Dimension _preferredSize = new Dimension(935, 1028);
+  public static Dimension _preferredSize = new Dimension(990, 1052);
+      //new Dimension(935, 1028); // with buttons
   protected Dimension _preferredButtonSize = new Dimension(120, 30);
 
   int numberOfLevels;
@@ -236,48 +291,19 @@ public class BouncyActivity extends JFrame implements Context, KeyListener {
     }
   }
 
-  // TODO: PLAY AUDIO
   Field field = new Field(System::currentTimeMillis,
       stringResolver = new StringResolver(),
       new VPSoundpool.Player()
-      //AudioPlayer.NoOpPlayer.getInstance()
       );
 
   void updateButtons() {
     GameState state = field.getGameState();
     boolean paused = state.isPaused();
     boolean gameInProgress = state.isGameInProgress();
-    if (gameInProgress) {
-      // No table switching during game
-      fileMenu.getMenuComponent(0).setEnabled(false);
-      fileMenu.getMenuComponent(1).setEnabled(false);
-      fileMenu.getMenuComponent(2).setEnabled(false);
-      //unlimitedBallsCheckBox.setEnabled(false);
-      if (paused) {
-        // resume and end game active
-        gameButtons.start.getButton().setEnabled(false);
-        gameButtons.end.getButton().setEnabled(true);
-        gameButtons.pause.getButton().setEnabled(false);
-        gameButtons.resume.getButton().setEnabled(true);
-      } else {
-        // Pause & end game active
-        gameButtons.start.getButton().setEnabled(false);
-        gameButtons.end.getButton().setEnabled(true);
-        gameButtons.pause.getButton().setEnabled(true);
-        gameButtons.resume.getButton().setEnabled(false);
-      }
-    } else {
-      fileMenu.getMenuComponent(0).setEnabled(true);
-      fileMenu.getMenuComponent(1).setEnabled(true);
-      fileMenu.getMenuComponent(2).setEnabled(true);
-      // Game not in progress,
-      // show high score active, unlimited balls checker active
-      //unlimitedBallsCheckBox.setEnabled(true);
-      gameButtons.start.getButton().setEnabled(true);
-      gameButtons.end.getButton().setEnabled(false);
-      gameButtons.pause.getButton().setEnabled(false);
-      gameButtons.resume.getButton().setEnabled(false);
-    }
+    fileMenu.getMenuComponent(0).setEnabled(!gameInProgress && !paused);
+    fileMenu.getMenuComponent(1).setEnabled(!gameInProgress && !paused);
+    fileMenu.getMenuComponent(2).setEnabled(!gameInProgress && !paused);
+    //gameButtons.updateButtons(gameInProgress, paused);
   }
 
   //@Override
@@ -667,22 +693,10 @@ public class BouncyActivity extends JFrame implements Context, KeyListener {
     updateFromPreferences();
 
     // Initialize audio, loading resources in a separate thread.
-    /* TODO: ACTIVATE SOUND AT SOME TIME */
-    VPSoundpool.initSounds(this);
+    //VPSoundpool.initSounds(this);
     VPSoundpool.loadSounds();
     //(new Thread(VPSoundpool::loadSounds)).start();
     //this.setVolumeControlStream(AudioManager.STREAM_MUSIC);
-    try {
-    VPSoundpool.playRollover();
-    Thread.sleep(200);
-    VPSoundpool.playRollover();
-    Thread.sleep(200);
-    VPSoundpool.playRollover();
-    Thread.sleep(200);
-    VPSoundpool.playRollover();
-    Thread.sleep(200);
-    VPSoundpool.playRollover();
-    } catch (Exception ex) {}
  }
 
   protected void initFrame() {
@@ -711,6 +725,13 @@ public class BouncyActivity extends JFrame implements Context, KeyListener {
     this.setLocationByPlatform(true);
     // set preferred size
     this.setPreferredSize(_preferredSize);
+    this.addComponentListener(new ComponentAdapter() {
+      @Override
+      public void componentResized(ComponentEvent componentEvent) {
+        System.out.println(BouncyActivity.this.getWidth() + "x" +
+            BouncyActivity.this.getHeight());
+      }
+    });
     // set handler for closing operations
     setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
     //setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
@@ -749,28 +770,7 @@ public class BouncyActivity extends JFrame implements Context, KeyListener {
     });
 
     // TODO: MAYBE REMOVE BUTTONS ALTOGETHER
-    JPanel buttonPanel = new JPanel();
-    buttonPanel.setForeground(Color.white);
-    buttonPanel.setBackground(Color.black);
-    buttonPanel.setBorder(new EmptyBorder(0,0,0,0));
-    ActionListener act = new ActionListener() {
-      @Override
-      public void actionPerformed(ActionEvent e) {
-        gameButtons b = gameButtons.valueOf(e.getActionCommand());
-        switch (b) {
-        case start: doStartGame(); break;
-        case end: doEndGame(); break;
-        case pause: onPause(); break;
-        case resume: onResume(); break;
-        }
-      }
-    };
-    for (gameButtons lab : gameButtons.values()) {
-      buttonPanel.add(lab.addButton(act));
-    }
-
-    contentPane.add(buttonPanel, BorderLayout.SOUTH);
-    // TODO: ADD THE MENUS TO THE MENU BAR AND THE BUTTONS TO A PANEL IN THE BOTTOM
+    //contentPane.add(gameButtons.createButtonPanel(this), BorderLayout.SOUTH);
 
     // create menu bar
     JMenuBar menuBar = new JMenuBar();
@@ -836,11 +836,10 @@ public class BouncyActivity extends JFrame implements Context, KeyListener {
 
   @Override
   public void keyTyped(KeyEvent e) {
+    boolean gameIsPaused = field.getGameState().isPaused();
+    boolean gameIsRunning = field.getGameState().isGameInProgress();
     // TODO Auto-generated method stub
     switch (Character.toLowerCase(e.getKeyChar())) {
-    case 's':
-      doStartGame();
-      break;
     case 'e':
       doEndGame();
       break;
@@ -850,6 +849,11 @@ public class BouncyActivity extends JFrame implements Context, KeyListener {
     case 'r':
       onResume();
       break;
+    default:
+      // this test is not really necessary, i want to avoid unnecessary calls
+      if (! gameIsRunning && ! gameIsPaused) {
+        doStartGame();
+      }
     }
   }
 
